@@ -136,3 +136,5 @@ Package/*
 !Package/.gitkeep
 
 Application History.xlsx/*
+
+codes/automation/*
