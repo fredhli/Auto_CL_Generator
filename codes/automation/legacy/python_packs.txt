@@ -1,0 +1,13 @@
+re
+shutil
+pyperclip
+openai
+tkinter
+PyPDF2
+selenium
+json
+base64
+pdfplumber
+time
+googlemaps
+fuzzywuzzy
