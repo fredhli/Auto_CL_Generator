@@ -283,22 +283,3 @@ def extract_keywords(jd, cv):
     prompt = f"""I will provide you with a job description and my resume. I want you to help me extract the keywords from the job description and check which important keywords are missing in my resume. Format your output in Python list format, like: ['keyword1', 'keyword2', 'keyword3']. Do not include any other information in the output.\n\n**Job Description:**\n{jd}\n\n**My Resume:**\n{cv}\n\n**Missing Keywords Extracted:**
     """
     return prompt
-
-
-def eval_keywords(kw_list):
-    stop = False
-    if len(kw_list) >= 4:
-        stop = True
-
-    if stop:
-        if system_used == "Windows":
-            root = tk.Tk()
-            root.withdraw()
-            messagebox.showinfo(
-                "Notice", "You have extracted enough keywords. Please stop."
-            )
-            root.destroy()
-        else:
-            os.system(
-                f'osascript -e \'tell app "System Events" to display dialog "You have extracted enough keywords. Please stop." with title "Notice"\''
-            )
