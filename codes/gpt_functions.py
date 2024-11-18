@@ -37,22 +37,7 @@ def chatgpt(model, prompt, system_msg=None, last_prompt=None, last_answer=None, 
 
 def query_companyinfo(jd_required):
     prompt = f"""
-    I am providing you with a job description. Use the information in the job description, help me **extract** company's name and address line (two lines), city and state. Use state abbreviation if possible.
-
-    Be concise, and only provide the requested information. If any information I am providing you is missing, response "None" in that sector.
-
-    **Job Description**
-    {jd_required}
-
-    **Company Name:**
-
-    **Company Address Line 1:**
-
-    **Company Address Line 2:**
-
-    **City:**
-
-    **State:**
+    I am providing you with a job description. Use the information in the job description, help me **extract** company's name and address line (two lines), city and state. Use state abbreviation if possible.\n\nBe concise, and only provide the requested information. If any information I am providing you is missing, response "None" in that sector.\n\n**Job Description**\n{jd_required}\n\n**Company Name:**\n\n\n**Company Address Line 1:**\n\n\n**Company Address Line 2:**\n\n\n**City:**\n\n\n**State:**\n
     """
     return prompt
 
@@ -148,17 +133,7 @@ def judge_info_type(
 
 def query_something_important(jd_required):
     query = f"""
-    I am applying for a job. I will attach the job description below. I did not take a look at the job description,\
-    and I plan to submit my CV and tailored cover letter to the system.\
-    Please warn me if there is anything I need to have my files modified or is there any extra files needed to prepare.\
-    For example, I need to combine them; I need to arrange them in a specific order; Some more documents needed, etc.
-    
-    Please be very concise, tell me only conclusion. If what I prepared is just enough, please respond "Nothing needed".
-    
-    **Job Description:**
-    {jd_required}
-    
-    **Things to note:**
+    I am applying for a job. I will attach the job description below. I did not take a look at the job description, and I plan to submit my CV and tailored cover letter to the system. Please warn me if there is anything I need to have my files modified or is there any extra files needed to prepare. For example, I need to combine them; I need to arrange them in a specific order; Some more documents needed, etc.\n\nPlease be very concise, tell me only conclusion. If what I prepared is just enough, please respond "Nothing needed".\n\n**Job Description:**\n{jd_required}\n\n**Things to note:**
     """
 
     return query
@@ -166,17 +141,7 @@ def query_something_important(jd_required):
 
 def query_anything_turn_me_down(jd_required):
     query = f"""
-    I am applying for a job. I will attach the job description below. I did not take a look at the job description,\
-    and I plan to submit my CV and tailored cover letter to the system.\
-    Please warn me if there is anything that may turn me down. For example, I am not qualified for this job; I am not eligible to work in this country; I am not available to work at this time,\
-    there is a specific requirement that I do not meet, etc.
-    
-    Please be very concise, tell me only conclusion. If nothing will turn me down, please respond "Nothing needed".
-    
-    **Job Description:**
-    {jd_required}
-    
-    **Things to note:**
+    I am applying for a job. I will attach the job description below. I did not take a look at the job description, and I plan to submit my CV and tailored cover letter to the system. Please warn me if there is anything that may turn me down. For example, I am not qualified for this job; I am not eligible to work in this country; I am not available to work at this time, there is a specific requirement that I do not meet, etc.\n\nPlease be very concise, tell me only conclusion. If nothing will turn me down, please respond "Nothing needed".\n\n**Job Description:**\n{jd_required}\n\n**Things to note:**
     """
     return query
 
@@ -229,20 +194,7 @@ def judge_something_important(answer, package_folder, system_used, turnmedown=Fa
 def query_cover_letter(
     cv_to_use, jd_required, company_name, additional_strength_to_mention=None
 ):
-    prompt = f"""
-    {one_sentence_bio}. Now I am seeking jobs in financial industries. Now I will provide you with a job description\
-    and my resume, and I want you to help me write a cover letter based on the job description and my resume. Please keep the cover letter concise and professional, 
-    
-    Notice, you shouldn't make it feel too much like AI. Specifically, don't use too many adverbial phrases.
-    
-    Moreover, the cover letter should make my strengths clear at a glance, and my cover letter should be divided into these parts: who I am, what aspects I want \
-    to emphasize for this job, and why I like this job.
-    
-    Please also make important texts bold by using **, . Do not only bold the first paragraph. In my working experience there should also be something worth bolding.
-    
-    Do not bold too many texts, only bold most important ones.
-    
-    Please try to keep the cover letter less than 300 words, but it is not a must. The most important thing is to make it concise and professional.
+    prompt = f"""{one_sentence_bio}. Now I am seeking jobs in financial industries. Now I will provide you with a job description and my resume, and I want you to help me write a cover letter based on the job description and my resume. Please keep the cover letter concise and professional.\n\nNotice, you shouldn't make it feel too much like AI. Specifically, don't use too many adverbial phrases.\n\nMoreover, the cover letter should make my strengths clear at a glance, and my cover letter should be divided into these parts: who I am, what aspects I want to emphasize for this job, and why I like this job.\n\nPlease also make important texts bold by using **, . Do not only bold the first paragraph. In my working experience there should also be something worth bolding.\n\nDo not bold too many texts, only bold most important ones.\n\nPlease try to keep the cover letter less than 300 words, but it is not a must. The most important thing is to make it concise and professional.
     
     **Company Name:**
     {company_name}
@@ -263,14 +215,7 @@ def query_cover_letter(
 
 def query_shirnk_text(extracted_text, threshold=300):
     query = f"""
-    Please help me shrink the cover letter to less than {threshold} words while keeping the main content and etiquette.
-    
-    Remember to again bold the important texts that are marked with ** in the original cover letter.
-    
-    **Cover Letter:**
-    {extracted_text}
-    
-    **Shrinked Cover Letter:**
+    Please help me shrink the cover letter to less than {threshold} words while keeping the main content and etiquette.\n\nRemember to again bold the important texts that are marked with ** in the original cover letter.\n\n**Cover Letter:**\n{extracted_text}\n\n**Shrinked Cover Letter:**
     """
     return query
 
@@ -283,8 +228,7 @@ def shrink_text(extracted_text, threshold=300):
         )
         return extracted_text
 
-    extracted_text_2 = chatgpt(
-        "chatgpt-4o-latest", query_shirnk_text(extracted_text))
+    extracted_text_2 = chatgpt("chatgpt-4o-latest", query_shirnk_text(extracted_text))
     word_count_2 = len(extracted_text_2.split())
 
     print(
@@ -295,25 +239,8 @@ def shrink_text(extracted_text, threshold=300):
 
 def query_job_title(jd_required, cv_to_use, cover_letter):
     prompt = f"""
-    I will provide you with a job description,  my resume, and my drafted cover letter.\
-    I want you to help me identify the job title I shall use in my cover letter: for example \
-    "Data Scientist", "Assistant Portfolio Manager", "Execution Trader", etc. You can use "&" \
-    to connect two titles if necessary. Remember, this job title is used to describe **my position**.
-    
-    Do not use any title that is not related to my position or too boastful .
-    
-    Also. just give me the result. Do not give me the reasoning.
-    
-    **Job Description:**
-    {jd_required}
-    
-    **My Resume:**
-    {cv_to_use}
-    
-    **Drafted Cover Letter:**
-    {cover_letter}
-    
-    **Most Suitable Job Title:**
+    I will provide you with a job description,  my resume, and my drafted cover letter.\n\nI want you to help me identify the job title I shall use in my cover letter: for example "Research Intern", "Assistant Portfolio Manager", "Execution Trader", etc. You can use "&" to connect two titles if necessary. Remember, this job title is used to describe **my position**.\n\nDo not use any title that is not related to my position or too boastful.\n\nAlso. just give me the result. Do not give me the reasoning.\n\n**Job Description:**\n{jd_required}\n\n**My Resume:**\n{cv_to_use}\n\n**Drafted Cover Letter:**
+    {cover_letter}\n\n**Most Suitable Job Title:**
     """
     return prompt
 
@@ -350,3 +277,28 @@ def merge_pdf(sequence, package_folder, my_name):
     merger.close()
 
     return True
+
+
+def extract_keywords(jd, cv):
+    prompt = f"""I will provide you with a job description and my resume. I want you to help me extract the keywords from the job description and check which important keywords are missing in my resume. Format your output in Python list format, like: ['keyword1', 'keyword2', 'keyword3']. Do not include any other information in the output.\n\n**Job Description:**\n{jd}\n\n**My Resume:**\n{cv}\n\n**Missing Keywords Extracted:**
+    """
+    return prompt
+
+
+def eval_keywords(kw_list):
+    stop = False
+    if len(kw_list) >= 4:
+        stop = True
+
+    if stop:
+        if system_used == "Windows":
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showinfo(
+                "Notice", "You have extracted enough keywords. Please stop."
+            )
+            root.destroy()
+        else:
+            os.system(
+                f'osascript -e \'tell app "System Events" to display dialog "You have extracted enough keywords. Please stop." with title "Notice"\''
+            )
