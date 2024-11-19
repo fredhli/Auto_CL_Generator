@@ -1,5 +1,6 @@
 import os
 import re
+import ast
 import tkinter as tk
 
 from config import *
@@ -279,7 +280,57 @@ def merge_pdf(sequence, package_folder, my_name):
     return True
 
 
-def extract_keywords(jd, cv):
-    prompt = f"""I will provide you with a job description and my resume. I want you to help me extract the keywords from the job description and check which important keywords are missing in my resume. Format your output in Python list format, like: ['keyword1', 'keyword2', 'keyword3']. Do not include any other information in the output.\n\n**Job Description:**\n{jd}\n\n**My Resume:**\n{cv}\n\n**Missing Keywords Extracted:**
-    """
-    return prompt
+def extract_keywords(jd, cv, company_name, company_country):
+    system_msg = f"""As an HR professional at {company_name} in {company_country}, you are reviewing applications. Here is the job description for this role:\n\n{jd}\n\nNow you received one applicant (me)'s CV: \n\n{cv}\n\nEvaluate thoroughly the key abilities required for this role, and evaluate my CV's ATS (Applicant Tracking System) compatibility by analyzing keyword matches and formatting. Score on a scale of 0-100, where 100 means perfect keyword alignment and formatting, and 0 means no matches. If the score surpasses 70, my CV can go through this round of machine screening, meaning it is a compatible CV."""
+
+    prompt_1 = """On a scale of 0-100, please provide my CV's ATS score. Output only the number, do not include any other information."""
+
+    # First attempt with no temperature
+    answer_1 = chatgpt("gpt-4o-mini", prompt=prompt_1, system_msg=system_msg)
+    try:
+        ats_score_num = int(answer_1)
+        if 0 <= ats_score_num <= 100:
+            if ats_score_num >= 70:
+                return True, ats_score_num, []
+    except ValueError:
+        pass
+
+    # Retry with increasing temperature if initial attempt fails
+    for retry in range(5):
+        try:
+            answer_1 = chatgpt(
+                "gpt-4o-mini", prompt=prompt_1, system_msg=system_msg, temp=0.2 * retry
+            )
+            ats_score_num = int(answer_1)
+            if 0 <= ats_score_num <= 100:
+                break
+        except ValueError:
+            continue
+    else:
+        return False, 0, []
+
+    if ats_score_num >= 70:
+        return True, ats_score_num, []
+
+    prompt_2 = f"""You rated my CV's ATS score as {ats_score_num} out of 100, this means my CV lacks some important keywords or abilities that disqualifies me from this round of machine screening.\n\nNow, I want you, the professional HR, to help me identify what keywords or key abilities requrred by this role failed to show up in my CV. Note that you have to extract the ability I failed to mention in my resume instead of copying and pasting phrases from job description. For example, if the job description mentions 'customer focused culture' and 'client relationships' that fails to show up in my CV, you should only extract keyword "client-facing" from these phrases instead of pasting the whole phrases.\n\nFormat your output in Python list format, like: ['keyword1', 'keyword2', 'keyword3']. Do not include any other information in the output."""
+
+    for retry in range(5):
+        answer_2 = (
+            chatgpt(
+                "gpt-4o-mini",
+                prompt=prompt_2,
+                system_msg=system_msg,
+                last_answer=answer_1,
+                last_prompt=prompt_1,
+            )
+            .strip()
+            .replace("```python", "")
+            .replace("`", "")
+        )
+
+        try:
+            return True, ats_score_num, ast.literal_eval(answer_2)
+        except Exception:
+            continue
+
+    return False, ats_score_num, []
