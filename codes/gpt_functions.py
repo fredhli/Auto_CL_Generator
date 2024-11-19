@@ -296,7 +296,7 @@ def extract_keywords(jd, cv, company_name, company_country):
         pass
 
     # Retry with increasing temperature if initial attempt fails
-    for retry in range(5):
+    for retry in range(1, 5):
         try:
             answer_1 = chatgpt(
                 "gpt-4o-mini", prompt=prompt_1, system_msg=system_msg, temp=0.2 * retry
