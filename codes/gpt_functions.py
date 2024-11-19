@@ -281,12 +281,12 @@ def merge_pdf(sequence, package_folder, my_name):
 
 
 def extract_keywords(jd, cv, company_name, company_country):
-    system_msg = f"""As an HR professional at {company_name} in {company_country}, you are reviewing applications. Here is the job description for this role:\n\n{jd}\n\nNow you received one applicant (me)'s CV: \n\n{cv}\n\nEvaluate thoroughly the key abilities required for this role, and evaluate my CV's ATS (Applicant Tracking System) compatibility by analyzing keyword matches and formatting. Score on a scale of 0-100, where 100 means perfect keyword alignment and formatting, and 0 means no matches. If the score surpasses 70, my CV can go through this round of machine screening, meaning it is a compatible CV."""
+    system_msg_1 = f"""You are an ATS (Applicant Tracking System) machine screener, filtering resumes received for the job opening at {company_name} in {company_country}. Here is the job description for this role:\n\n{jd}\n\nNow you received one applicant (me)'s CV: \n\n{cv}\n\nEvaluate thoroughly the key abilities required for this role, and evaluate my CV's ATS compatibility by analyzing keyword matches and formatting. Score on a scale of 0-100, where 100 means perfect keyword alignment and formatting, and 0 means no matches. If the score surpasses 70, my CV can go through this round of machine screening, meaning it is a compatible CV. Use industry-recognized ATS standards to evaluate my CV."""
 
     prompt_1 = """On a scale of 0-100, please provide my CV's ATS score. Output only the number, do not include any other information."""
 
     # First attempt with no temperature
-    answer_1 = chatgpt("gpt-4o-mini", prompt=prompt_1, system_msg=system_msg)
+    answer_1 = chatgpt("gpt-4o-mini", prompt=prompt_1, system_msg=system_msg_1)
     try:
         ats_score_num = int(answer_1)
         if 0 <= ats_score_num <= 100:
@@ -299,7 +299,10 @@ def extract_keywords(jd, cv, company_name, company_country):
     for retry in range(1, 5):
         try:
             answer_1 = chatgpt(
-                "gpt-4o-mini", prompt=prompt_1, system_msg=system_msg, temp=0.2 * retry
+                "gpt-4o-mini",
+                prompt=prompt_1,
+                system_msg=system_msg_1,
+                temp=0.2 * retry,
             )
             ats_score_num = int(answer_1)
             if 0 <= ats_score_num <= 100:
@@ -309,20 +312,19 @@ def extract_keywords(jd, cv, company_name, company_country):
     else:
         return False, 0, []
 
-    if ats_score_num >= 70:
-        return True, ats_score_num, []
+    system_msg_2 = f"""You are a professional HR manager working for {company_name} in {company_country}. You are supposed to help me refine my resume to better match a role in this company. The job description for this role: \n\n{jd}\n\nMy CV has already went through the ATS screening and the machine provided me with a score {ats_score_num}."""
 
-    prompt_2 = f"""You rated my CV's ATS score as {ats_score_num} out of 100, this means my CV lacks some important keywords or abilities that disqualifies me from this round of machine screening.\n\nNow, I want you, the professional HR, to help me identify what keywords or key abilities requrred by this role failed to show up in my CV. Note that you have to extract the ability I failed to mention in my resume instead of copying and pasting phrases from job description. For example, if the job description mentions 'customer focused culture' and 'client relationships' that fails to show up in my CV, you should only extract keyword "client-facing" from these phrases instead of pasting the whole phrases.\n\nFormat your output in Python list format, like: ['keyword1', 'keyword2', 'keyword3']. Do not include any other information in the output."""
+    if ats_score_num >= 70:
+        prompt_2 = f"""This ATS score means my CV has already passed the machine screening. However, as a professional HR, please help me identify what keywords or key abilities required by this role failed to show up in my CV."""
+
+    else:
+        prompt_2 = f"""This means my CV lacks some important keywords or abilities that disqualifies me from this round of machine screening.\n\nNow, I want you, the professional HR, to help me identify what keywords or key abilities required by this role failed to show up in my CV."""
+
+    prompt_2 += """\n\nNote that you have to extract the ability I failed to mention in my resume instead of copying and pasting phrases from job description. For example, if the job description mentions 'customer focused culture' and 'client relationships' that fails to show up in my CV, you should only extract keyword "client-facing" from these phrases instead of pasting the whole phrases.\n\nFormat your output in Python list format, like: ['keyword1', 'keyword2', 'keyword3']. Do not include any other information in the output."""
 
     for retry in range(5):
         answer_2 = (
-            chatgpt(
-                "gpt-4o-mini",
-                prompt=prompt_2,
-                system_msg=system_msg,
-                last_answer=answer_1,
-                last_prompt=prompt_1,
-            )
+            chatgpt("gpt-4o-mini", prompt=prompt_2, system_msg=system_msg_2)
             .strip()
             .replace("```python", "")
             .replace("`", "")
@@ -334,3 +336,34 @@ def extract_keywords(jd, cv, company_name, company_country):
             continue
 
     return False, ats_score_num, []
+
+
+def show_popup_keyword(system_used, kw_list, ats_score):
+    if system_used == "Windows":
+        root = tk.Tk()
+        root.withdraw()
+        choice = messagebox.askyesno(
+            "Keywords missing in CV",
+            f"""ATS Score: {ats_score}. Keywords missing in CV: {', '.join(kw_list)}, please change "base.docx" accordingly. After changing "base.docx", please click "Already Changed". If you decline the suggestions, please click "Decline Suggestion".""",
+            icon="question",
+            button={"yes": "Already Changed", "no": "Decline Suggestion"},
+        )
+        root.destroy()
+
+        if choice:
+            return "Already changed"
+        else:
+            return "Decline suggestion"
+
+    else:
+        script = f"""
+            tell application "System Events"
+            set theButton to button returned of (display dialog "ATS Score: {ats_score}. Keywords missing in CV: {', '.join(kw_list)}, please change \\"base.docx\\" accordingly. After changing \\"base.docx\\", please click \\"Already Changed\\". If you decline the suggestions, please click \\"Decline Suggestion\\"." buttons {{"Already Changed", "Decline Suggestion"}} default button "Already Changed")
+            end tell
+        """
+        result = os.system(f"osascript -e '{script}'")
+
+        if result == 0:
+            return "Already changed"
+        else:
+            return "Decline suggestion"
