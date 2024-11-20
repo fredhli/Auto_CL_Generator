@@ -10,6 +10,7 @@ selenium
 pprint
 openai
 tkinter
+doc2PDF
 PyPDF2
 selenium
 json
