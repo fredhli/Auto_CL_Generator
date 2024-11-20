@@ -1,7 +1,9 @@
 import os
 import re
 import ast
+import fuzzywuzzy
 import tkinter as tk
+import pandas as pd
 
 from config import *
 from cv_info import *
@@ -367,3 +369,69 @@ def show_popup_keyword(system_used, kw_list, ats_score):
             return "Already changed"
         else:
             return "Decline suggestion"
+
+
+def compare_jd(jd, company_name, df, threshold=90):
+    jd_text = jd.replace("\n", " ")
+    applied_key = range(len(df))
+    applied_val = df["Original_JD"].apply(lambda x: x.replace("\n", " ")).tolist()
+    applied = dict(zip(applied_key, applied_val))
+    scores_val = [fuzzywuzzy.fuzz.token_set_ratio(jd_text, x) for x in applied.values()]
+    scores = dict(zip(applied_key, scores_val))
+
+    scores_over_th = {k: v for k, v in scores.items() if v >= threshold}
+
+    if len(scores_over_th) > 0:
+        scores_over_th_idx = list(scores_over_th.keys())
+        temp = df.loc[scores_over_th_idx][
+            ["Date", "Company_Name", "Position_Name", "Company_City"]
+        ]
+        company_names_applied = temp["Company Name"].tolist()
+        company_names_scores = [
+            fuzzywuzzy.fuzz.token_set_ratio(company_name, x)
+            for x in company_names_applied
+        ]
+        if any([x >= threshold for x in company_names_scores]):
+            return True, "Similar applications found with similar company names.", temp
+
+        else:
+            return (
+                True,
+                "Similar applications found without similar company names.",
+                temp,
+            )
+
+    else:
+        return (
+            False,
+            "No similar applications found, feel free to proceed.",
+            pd.DataFrame(),
+        )
+
+
+def msgbox_similar_application(message, temp, system_used):
+    if system_used == "Windows":
+        root = tk.Tk()
+        root.withdraw()
+        choice = messagebox.askyesno(
+            "Similar Applications Found",
+            f"{message}\n\n{temp.to_string()}",
+            icon="warning",
+            button={"yes": "Continue", "no": "Stop"},
+        )
+        root.destroy()
+        if not choice:
+            return "halt"
+
+    else:
+        script = f"""
+            tell application "System Events"
+            set theButton to button returned of (display dialog "{message}\n\n{temp.to_string()}" buttons {{"Continue", "Stop"}} default button "Continue")
+            end tell
+        """
+        result = os.system(f"osascript -e '{script}'")
+
+        if result != 0:
+            return "halt"
+
+    return "continue"
