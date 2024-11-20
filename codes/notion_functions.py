@@ -10,7 +10,6 @@ import pyperclip
 import pdfplumber
 import tkinter as tk
 
-from cv_info import *
 from config import notion_api_key
 
 from glob import glob
@@ -165,25 +164,25 @@ def replace_simple(old_text, new_text, page_id, change_color=False, color_to=Non
     return True, block_id
 
 
-def check_TBA(driver):
+def check_TBA(driver, first_paragraph):
     retry = 0
-    while retry <= 3:
+    while retry <= 5:
         try:
             body_text = driver.find_element(By.TAG_NAME, "body").text
-            if "TBA" in body_text:
-                print(f"TBA found on retry {retry}, refreshing the page...")
+            if first_paragraph not in body_text:
+                print(f"{retry}, refreshing the page...")
                 driver.refresh()
-                time.sleep(3)
+                time.sleep(5)
                 retry += 1
             else:
-                print("No TBA found, page is successful.")
+                print("Page is successful.")
                 return True
         except NoSuchElementException:
             raise Exception("Unable to find page body element.")
 
     body_text = driver.find_element(By.TAG_NAME, "body").text
     if "TBA" in body_text:
-        raise Exception("Page contains 'TBA' after 3 retries, indicating an issue.")
+        raise Exception("Page contains 'TBA' after 5 retries, indicating an issue.")
     else:
         print("No TBA found after retries.")
         return True
@@ -191,7 +190,7 @@ def check_TBA(driver):
 
 def print_to_pdf(driver, file_path):
     print_options = {
-        "scale": 0.83,  # 85% margin
+        "scale": 0.85,  # 85% margin
         "paperWidth": 8.5,  # Letter width
         "paperHeight": 11,  # Letter height
         # 'marginTop': 0.4,
@@ -210,14 +209,14 @@ def print_to_pdf(driver, file_path):
     print(f"PDF saved to {file_path}")
 
 
-def selenium_download_pdf(service, options, download_folder, url):
+def selenium_download_pdf(service, options, download_folder, url, first_paragraph):
     driver = webdriver.Chrome(service=service, options=options)
     driver.get(url)
     time.sleep(5)
     driver.refresh()
     time.sleep(5)
 
-    if check_TBA(driver):
+    if check_TBA(driver, first_paragraph):
         print("Page is successful, proceeding to download PDF.")
 
     print_to_pdf(driver, f"{download_folder}/Cover Letter - Fred Li.pdf")

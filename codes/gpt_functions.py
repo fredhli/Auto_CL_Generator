@@ -6,7 +6,6 @@ import tkinter as tk
 import pandas as pd
 
 from config import *
-from cv_info import *
 from openai import OpenAI
 from PyPDF2 import PdfMerger
 from tkinter import messagebox
@@ -196,13 +195,14 @@ def judge_something_important(answer, package_folder, system_used, turnmedown=Fa
 
 def query_cover_letter(
     one_sentence_bio,
+    job_title,
     cv_to_use,
     jd_required,
     company_name,
     additional_strength_to_mention=None,
 ):
     prompt = f"""{one_sentence_bio}. Now I am seeking jobs in financial industries. Now I will provide you with a job description and my resume, and I want you to help me write a cover letter based on the job description and my resume. Please keep the cover letter concise and professional.\n\nNotice, you shouldn't make it feel too much like AI. This includes but not limited to:\n\n
-    1. Avoidance of participial phrases or present participles (-ing forms) in favor of more direct language constructions: for example, "I analyzed user behavior through A/B testing, **delivering** data-driven insights to the team." should be "I analyzed user behavior through A/B testing, **and provided** data-driven insights to the team." Using "ing" form to indirectly describe actions is a normal AI language pattern that should be avoided.\n2. Avoidance of too complex and uncommon words. For example, "Honed", "Harnessed", "Pioneered", should be replaced with more common words like "Improved", "Used", "Started". This is a cover letter, not a vocabulary test. I am fluent in English but I am still a non-native speaker. Using too much these words are too AI-like.\n3. Avoid repetitive sentence structures and predictable patterns.\n4. Use natural transitions between paragraphs instead of formulaic ones.\n5. Vary sentence length and structure to sound more human-like.\n6. Use active voice and simple present/past tense predominantly.\n\nIn the meantime, you should avoid being too simple and direct.\n1. Avoid repeated phrases and vocabulary. For example: repeated usage of "analyzed", "utilized", replace them with "assessed", "used" or other synonyms.\n2. Avoid repeated paragraph start. For example, "I am ...", "I worked as ...", "I earned ...", "I am excited ..." should not be used to start every paragraph. Try to vary the paragraph start to make it more natural.\n3. Descirbe my work accomplishments in a more vivid way. For example, "I utilized Black-Scholes and Heston-Nandi GARCH Model to price derivatives." should be like "I implemented sophisticated financial models including Black-Scholes and Heston-Nandi GARCH to provide accurate derivative pricing solutions."\n4. Avoid using too many "I" sentences.\n\nMoreover, the cover letter should make my strengths clear at a glance, and my cover letter should be divided into these parts: who I am, what aspects I want to emphasize for this job, and why I like this job.\n\nPlease also make important texts bold by using **, do not only bold the first paragraph. In my working experience there should also be something worth bolding.\n\nDo not bold too many texts, only bold most important ones.\n\nPlease try to keep the cover letter between 250 -- 300 words, but it is not a must. The most important thing is to make it concise and professional. Think thoroughly before you draft, and make sure your drafting complies with every of my demand.\n\n**Company Name:**\n{company_name}\n\n**Job Description:**\n{jd_required}\n\n**My Resume:**\n{cv_to_use}\n\n
+    1. Avoidance of participial phrases or present participles (-ing forms) in favor of more direct language constructions: for example, "I analyzed user behavior through A/B testing, **delivering** data-driven insights to the team." should be "I analyzed user behavior through A/B testing, **and provided** data-driven insights to the team." Using "ing" form to indirectly describe actions is a normal AI language pattern that should be avoided.\n2. Avoidance of too complex and uncommon words. For example, "Honed", "Harnessed", "Pioneered", should be replaced with more common words like "Improved", "Used", "Started". This is a cover letter, not a vocabulary test. I am fluent in English but I am still a non-native speaker. Using too much these words are too AI-like.\n3. Avoid repetitive sentence structures and predictable patterns.\n4. Use natural transitions between paragraphs instead of formulaic ones.\n5. Vary sentence length and structure to sound more human-like.\n6. Use active voice and simple present/past tense predominantly.\n\nIn the meantime, you should avoid being too simple and direct.\n1. Avoid repeated phrases and vocabulary. For example: repeated usage of "analyzed", "utilized", replace them with "assessed", "used" or other synonyms.\n2. Avoid repeated paragraph start. For example, "I am ...", "I worked as ...", "I earned ...", "I am excited ..." should not be used to start every paragraph. Try to vary the paragraph start to make it more natural.\n3. Descirbe my work accomplishments in a more vivid way. For example, "I utilized Black-Scholes and Heston-Nandi GARCH Model to price derivatives." should be like "I implemented sophisticated financial models including Black-Scholes and Heston-Nandi GARCH to provide accurate derivative pricing solutions."\n4. Avoid using too many "I" sentences.\n\nMoreover, the cover letter should make my strengths clear at a glance, and my cover letter should be divided into these parts: who I am, what aspects I want to emphasize for this job, and why I like this job.\n\nPlease also make important texts bold by using **.\n\n1. Do not only bold the first paragraph. In my working experience there should also be something worth bolding.\n2. Do not bold too many texts, only bold most important ones.\n3. Do not bold the whole sentence, only bold phrases or words that are most important.\n\nPlease try to keep the cover letter between 250 -- 300 words, but it is not a must. The most important thing is to make it professional and well-organized.\n\nThink thoroughly before you draft, and make sure your drafting complies with every of my demand.\n\nMoreover, leave out useless messages or specific requirements for HR name, start only from "Dear Hiring Manager,", and end with "Sincerely, [My Name]" is enough. I will use Python to automatically extract your response. Keep it standardized.\n\n**Company Name:**\n{company_name}\n\n**Job Title**\n{job_title}\n\n**Job Description:**\n{jd_required}\n\n**My Resume:**\n{cv_to_use}\n\n
     """
 
     if (
@@ -413,8 +413,8 @@ def compare_jd(jd, company_name, df, threshold=90):
 
 
 def msgbox_similar_application(message, temp, system_used):
-    dates = temp["Date"].tolist()
-    positions = temp["Position Name"].dropna().tolist()
+    dates = temp["Date"].drop_duplicates().tolist()
+    positions = temp["Position Name"].drop_duplicates().dropna().tolist()
     if system_used == "Windows":
         root = tk.Tk()
         root.withdraw()
