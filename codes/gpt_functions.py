@@ -195,24 +195,23 @@ def judge_something_important(answer, package_folder, system_used, turnmedown=Fa
 
 
 def query_cover_letter(
-    cv_to_use, jd_required, company_name, additional_strength_to_mention=None
+    one_sentence_bio,
+    cv_to_use,
+    jd_required,
+    company_name,
+    additional_strength_to_mention=None,
 ):
-    prompt = f"""{one_sentence_bio}. Now I am seeking jobs in financial industries. Now I will provide you with a job description and my resume, and I want you to help me write a cover letter based on the job description and my resume. Please keep the cover letter concise and professional.\n\nNotice, you shouldn't make it feel too much like AI. Specifically, don't use too many adverbial phrases.\n\nMoreover, the cover letter should make my strengths clear at a glance, and my cover letter should be divided into these parts: who I am, what aspects I want to emphasize for this job, and why I like this job.\n\nPlease also make important texts bold by using **, . Do not only bold the first paragraph. In my working experience there should also be something worth bolding.\n\nDo not bold too many texts, only bold most important ones.\n\nPlease try to keep the cover letter less than 300 words, but it is not a must. The most important thing is to make it concise and professional.
-    
-    **Company Name:**
-    {company_name}
-    
-    **Job Description:**
-    {jd_required}
-    
-    **My Resume:**
-    {cv_to_use}
-    
-    **Please mention some of my strongest points in the cover letter:**
-    {additional_strength_to_mention if additional_strength_to_mention else ""}
-    
-    **Cover Letter:**
+    prompt = f"""{one_sentence_bio}. Now I am seeking jobs in financial industries. Now I will provide you with a job description and my resume, and I want you to help me write a cover letter based on the job description and my resume. Please keep the cover letter concise and professional.\n\nNotice, you shouldn't make it feel too much like AI. This includes but not limited to:\n\n
+    1. Avoidance of participial phrases or present participles (-ing forms) in favor of more direct language constructions: for example, "I analyzed user behavior through A/B testing, **delivering** data-driven insights to the team." should be "I analyzed user behavior through A/B testing, **and provided** data-driven insights to the team." Using "ing" form to indirectly describe actions is a normal AI language pattern that should be avoided.\n2. Avoidance of too complex and uncommon words. For example, "Honed", "Harnessed", "Pioneered", should be replaced with more common words like "Improved", "Used", "Started". This is a cover letter, not a vocabulary test. I am fluent in English but I am still a non-native speaker. Using too much these words are too AI-like.\n3. Avoid repetitive sentence structures and predictable patterns.\n4. Use natural transitions between paragraphs instead of formulaic ones.\n5. Vary sentence length and structure to sound more human-like.\n6. Use active voice and simple present/past tense predominantly.\n\nIn the meantime, you should avoid being too simple and direct.\n1. Avoid repeated phrases and vocabulary. For example: repeated usage of "analyzed", "utilized", replace them with "assessed", "used" or other synonyms.\n2. Avoid repeated paragraph start. For example, "I am ...", "I worked as ...", "I earned ...", "I am excited ..." should not be used to start every paragraph. Try to vary the paragraph start to make it more natural.\n3. Descirbe my work accomplishments in a more vivid way. For example, "I utilized Black-Scholes and Heston-Nandi GARCH Model to price derivatives." should be like "I implemented sophisticated financial models including Black-Scholes and Heston-Nandi GARCH to provide accurate derivative pricing solutions."\n4. Avoid using too many "I" sentences.\n\nMoreover, the cover letter should make my strengths clear at a glance, and my cover letter should be divided into these parts: who I am, what aspects I want to emphasize for this job, and why I like this job.\n\nPlease also make important texts bold by using **, do not only bold the first paragraph. In my working experience there should also be something worth bolding.\n\nDo not bold too many texts, only bold most important ones.\n\nPlease try to keep the cover letter less than 300 words, but it is not a must. The most important thing is to make it concise and professional. Think thoroughly before you draft, and make sure your drafting complies with every of my demand.\n\n**Company Name:**\n{company_name}\n\n**Job Description:**\n{jd_required}\n\n**My Resume:**\n{cv_to_use}\n\n
     """
+
+    if (
+        additional_strength_to_mention is not None
+        and additional_strength_to_mention != ""
+    ):
+        prompt += f"**Please mention some of my strongest points in the cover letter:**\n{additional_strength_to_mention}\n\n"
+
+    prompt += "**Cover Letter:**\n"
     return prompt
 
 
@@ -325,15 +324,17 @@ def extract_keywords(jd, cv, company_name, company_country):
     prompt_2 += """\n\nNote that you have to extract the ability I failed to mention in my resume instead of copying and pasting phrases from job description. For example, if the job description mentions 'customer focused culture' and 'client relationships' that fails to show up in my CV, you should only extract keyword "client-facing" from these phrases instead of pasting the whole phrases.\n\nFormat your output in Python list format, like: ['keyword1', 'keyword2', 'keyword3']. Do not include any other information in the output."""
 
     for retry in range(5):
-        answer_2 = (
-            chatgpt("gpt-4o-mini", prompt=prompt_2, system_msg=system_msg_2)
-            .strip()
-            .replace("```python", "")
-            .replace("`", "")
-        )
+        answer_2 = chatgpt(
+            "gpt-4o-latest", prompt=prompt_2, system_msg=system_msg_2, temp=0.2 * retry
+        ).strip()
+
+        # Clean the response
+        answer_2 = answer_2.replace("```python", "").replace("```", "").replace("`", "")
 
         try:
-            return True, ats_score_num, ast.literal_eval(answer_2)
+            keyword_list = ast.literal_eval(answer_2)
+            if isinstance(keyword_list, list):
+                return True, ats_score_num, keyword_list
         except Exception:
             continue
 
@@ -372,19 +373,21 @@ def show_popup_keyword(system_used, kw_list, ats_score):
 
 
 def compare_jd(jd, company_name, df, threshold=90):
-    jd_text = jd.replace("\n", " ")
-    applied_key = range(len(df))
-    applied_val = df["Original_JD"].apply(lambda x: x.replace("\n", " ")).tolist()
-    applied = dict(zip(applied_key, applied_val))
-    scores_val = [fuzzywuzzy.fuzz.token_set_ratio(jd_text, x) for x in applied.values()]
-    scores = dict(zip(applied_key, scores_val))
+    jds = dict(zip(range(len(df)), df["Original_JD"].tolist()))
+    jds = {k: v for k, v in jds.items() if pd.notna(v) and v != ""}
+
+    score_list = [fuzzywuzzy.fuzz.ratio(jd.replace("\n", ""), x) for x in jds.values()]
+    scores = dict(zip(jds.keys(), score_list))
+
+    scores_over_th = {k: v for k, v in scores.items() if v >= 90}
+    idx_list = list(scores_over_th.keys())
 
     scores_over_th = {k: v for k, v in scores.items() if v >= threshold}
+    idx_list = list(scores_over_th.keys())
 
     if len(scores_over_th) > 0:
-        scores_over_th_idx = list(scores_over_th.keys())
-        temp = df.loc[scores_over_th_idx][
-            ["Date", "Company_Name", "Position_Name", "Company_City"]
+        temp = df.loc[idx_list][
+            ["Date", "Company Name", "Position Name", "Company City"]
         ]
         company_names_applied = temp["Company Name"].tolist()
         company_names_scores = [
@@ -410,12 +413,14 @@ def compare_jd(jd, company_name, df, threshold=90):
 
 
 def msgbox_similar_application(message, temp, system_used):
+    dates = temp["Date"].tolist()
+    positions = temp["Position Name"].dropna().tolist()
     if system_used == "Windows":
         root = tk.Tk()
         root.withdraw()
         choice = messagebox.askyesno(
             "Similar Applications Found",
-            f"{message}\n\n{temp.to_string()}",
+            f"{message}\n\n{", ".join(dates)}\n\n{", ".join(positions)}",
             icon="warning",
             button={"yes": "Continue", "no": "Stop"},
         )
@@ -426,12 +431,13 @@ def msgbox_similar_application(message, temp, system_used):
     else:
         script = f"""
             tell application "System Events"
-            set theButton to button returned of (display dialog "{message}\n\n{temp.to_string()}" buttons {{"Continue", "Stop"}} default button "Continue")
+            set theButton to button returned of (display dialog "{message}\n\n{", ".join(dates)}\n\n{", ".join(positions)}" buttons {{"Continue", "Stop"}} default button "Continue")
+            return theButton
             end tell
         """
-        result = os.system(f"osascript -e '{script}'")
+        result = os.popen(f"osascript -e '{script}'").read().strip()
 
-        if result != 0:
+        if result == "Stop":
             return "halt"
 
     return "continue"
