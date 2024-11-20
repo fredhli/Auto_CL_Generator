@@ -68,25 +68,24 @@ def get_notion(api_key=notion_api_key):
 
 
 def parse_text(extracted_text):
-    # Split by new lines
-    lines = extracted_text.split("\n")
+    # Split by double new lines (paragraphs)
+    paragraphs = extracted_text.split("\n\n")
 
     result = []
-    for line in lines:
-        # Process bold text within each line
-        parts = re.split(r"(\*\*.*?\*\*)", line)
+    for paragraph in paragraphs:
+        # Process bold text within the paragraph
+        parts = re.split(r"(\*\*.*?\*\*)", paragraph)
 
         for part in parts:
             if part.startswith("**") and part.endswith("**"):
                 result.append({"content": part[2:-2], "bold": True})
             else:
                 result.append({"content": part, "bold": False})
-        # Add a line break (empty string block) after each line to simulate new line
-        result.append(
-            {"content": "\n", "bold": False}
-        )  # Add this to represent a newline in Notion
-    # delete the last newline
-    del result[-1]
+
+        # Add a paragraph separator after each paragraph except the last one
+        if paragraph != paragraphs[-1]:
+            result.append({"content": "\n\n", "type": "new_block"})
+
     return result
 
 
@@ -106,8 +105,7 @@ def find_block_by_text(blocks, search_text):
             if search_text in paragraph_text:
                 return block["id"], paragraph_text
         elif block["type"] == "column_list":
-            column_blocks = notion.blocks.children.list(
-                block_id=block["id"])["results"]
+            column_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
             for column_block in column_blocks:
                 if column_block["type"] == "column":
                     column_content = notion.blocks.children.list(
@@ -141,14 +139,12 @@ def update_block_content(block_id, text_segments, change_color=False, color_to=N
     ]
 
     if not change_color:
-        notion.blocks.update(block_id=block_id, paragraph={
-                             "rich_text": rich_text})
+        notion.blocks.update(block_id=block_id, paragraph={"rich_text": rich_text})
         time.sleep(2)
         print(f"Block {block_id} updated.")
     else:
         notion.blocks.update(
-            block_id=block_id, paragraph={
-                "rich_text": rich_text, "color": color_to}
+            block_id=block_id, paragraph={"rich_text": rich_text, "color": color_to}
         )
         time.sleep(2)
         print(f"Block {block_id} updated with color '{color_to}'.")
@@ -187,8 +183,7 @@ def check_TBA(driver):
 
     body_text = driver.find_element(By.TAG_NAME, "body").text
     if "TBA" in body_text:
-        raise Exception(
-            "Page contains 'TBA' after 3 retries, indicating an issue.")
+        raise Exception("Page contains 'TBA' after 3 retries, indicating an issue.")
     else:
         print("No TBA found after retries.")
         return True
@@ -197,8 +192,8 @@ def check_TBA(driver):
 def print_to_pdf(driver, file_path):
     print_options = {
         "scale": 0.83,  # 85% margin
-        "paperWidth": 8.27,  # A4 width
-        "paperHeight": 11.69,  # A4 height
+        "paperWidth": 8.5,  # Letter width
+        "paperHeight": 11,  # Letter height
         # 'marginTop': 0.4,
         # 'marginBottom': 0.4,
         # 'marginLeft': 0.4,
@@ -290,8 +285,7 @@ def replace_text_in_blocks(blocks, start_text, end_text, replacement_text):
                 replacement_done = True
 
         if block.get("has_children", False):
-            child_blocks = notion.blocks.children.list(
-                block_id=block["id"])["results"]
+            child_blocks = notion.blocks.children.list(block_id=block["id"])["results"]
             replacement_done = (
                 replace_text_in_blocks(
                     child_blocks, start_text, end_text, replacement_text
@@ -306,8 +300,7 @@ def update_block_content_2(block_id, new_text):
     notion = get_notion()
     notion.blocks.update(
         block_id=block_id,
-        paragraph={"rich_text": [
-            {"type": "text", "text": {"content": new_text}}]},
+        paragraph={"rich_text": [{"type": "text", "text": {"content": new_text}}]},
     )
     print(f"Updated block {block_id} with new text.")
     time.sleep(1)
