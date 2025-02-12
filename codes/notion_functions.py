@@ -188,19 +188,33 @@ def check_TBA(driver, first_paragraph):
         return True
 
 
-def print_to_pdf(driver, file_path):
-    print_options = {
-        "scale": 0.85,  # 85% margin
-        "paperWidth": 8.5,  # Letter width
-        "paperHeight": 11,  # Letter height
-        # 'marginTop': 0.4,
-        # 'marginBottom': 0.4,
-        # 'marginLeft': 0.4,
-        # 'marginRight': 0.4,
-        # 'printBackground': True,     # Print background graphics
-        "preferCSSPageSize": True,  # Enable CSS page size preference
-    }
+def print_to_pdf(driver, file_path, paper_size):
+    if paper_size == "letter":
+        print_options = {
+            "scale": 0.85,  # 85% margin
+            "paperWidth": 8.5,  # Letter width
+            "paperHeight": 11,  # Letter height
+            # 'marginTop': 0.4,
+            # 'marginBottom': 0.4,
+            # 'marginLeft': 0.4,
+            # 'marginRight': 0.4,
+            # 'printBackground': True,     # Print background graphics
+            "preferCSSPageSize": True,  # Enable CSS page size preference
+        }
 
+    else:
+        # A4
+        print_options = {
+            "scale": 0.85,  # 85% margin
+            "paperWidth": 8.27,  # A4 width
+            "paperHeight": 11.69,  # A4 height
+            # 'marginTop': 0.4,
+            # 'marginBottom': 0.4,
+            # 'marginLeft': 0.4,
+            # 'marginRight': 0.4,
+            # 'printBackground': True,     # Print background graphics
+            "preferCSSPageSize": True,  # Enable CSS page size preference
+        }
     result = driver.execute_cdp_cmd("Page.printToPDF", print_options)
 
     with open(file_path, "wb") as f:
@@ -209,7 +223,9 @@ def print_to_pdf(driver, file_path):
     print(f"PDF saved to {file_path}")
 
 
-def selenium_download_pdf(service, options, download_folder, url, first_paragraph):
+def selenium_download_pdf(
+    service, options, download_folder, url, first_paragraph, paper_size
+):
     driver = webdriver.Chrome(service=service, options=options)
     driver.get(url)
     time.sleep(5)
@@ -219,7 +235,7 @@ def selenium_download_pdf(service, options, download_folder, url, first_paragrap
     if check_TBA(driver, first_paragraph):
         print("Page is successful, proceeding to download PDF.")
 
-    print_to_pdf(driver, f"{download_folder}/Cover Letter - Fred Li.pdf")
+    print_to_pdf(driver, f"{download_folder}/Cover Letter - Fred Li.pdf", paper_size)
     driver.quit()
     return True
 

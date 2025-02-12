@@ -92,12 +92,14 @@ def company_info(
         company_country = "USA"
     elif company_state_two_letter in ca_province_dict.keys():
         company_country = "Canada"
+    elif company_state_two_letter == "HK":
+        company_country = "Hong Kong"
     elif company_state_two_letter in ["None", ""]:
         company_country = "None"
     else:
-        assert (
-            False
-        ), f"State / Province {company_state_two_letter} not found in state_dict"
+        assert False, (
+            f"State / Province {company_state_two_letter} not found in state_dict"
+        )
 
     return (
         True,
@@ -260,9 +262,9 @@ def merge_pdf(sequence, package_folder, my_name):
     try:
         open(f"{package_folder}/Unofficial Transcript - {my_name}.pdf")
     except FileNotFoundError:
-        assert (
-            False
-        ), f"{package_folder}/Unofficial Transcript - {my_name}.pdf not found"
+        assert False, (
+            f"{package_folder}/Unofficial Transcript - {my_name}.pdf not found"
+        )
 
     pdf_dict = {
         "1": f"{package_folder}/CV - {my_name}.pdf",
@@ -347,7 +349,7 @@ def show_popup_keyword(system_used, kw_list, ats_score):
         root.withdraw()
         choice = messagebox.askyesno(
             "Keywords missing in CV",
-            f"""ATS Score: {ats_score}. Keywords missing in CV: {', '.join(kw_list)}, please change "base.docx" accordingly. After changing "base.docx", please click "Already Changed". If you decline the suggestions, please click "Decline Suggestion".""",
+            f"""ATS Score: {ats_score}. Keywords missing in CV: {", ".join(kw_list)}, please change "base.docx" accordingly. After changing "base.docx", please click "Already Changed". If you decline the suggestions, please click "Decline Suggestion".""",
             icon="question",
             button={"yes": "Already Changed", "no": "Decline Suggestion"},
         )
@@ -361,7 +363,7 @@ def show_popup_keyword(system_used, kw_list, ats_score):
     else:
         script = f"""
             tell application "System Events"
-            set theButton to button returned of (display dialog "ATS Score: {ats_score}. Keywords missing in CV: {', '.join(kw_list)}, please change \\"base.docx\\" accordingly. After changing \\"base.docx\\", please click \\"Already Changed\\". If you decline the suggestions, please click \\"Decline Suggestion\\"." buttons {{"Already Changed", "Decline Suggestion"}} default button "Already Changed")
+            set theButton to button returned of (display dialog "ATS Score: {ats_score}. Keywords missing in CV: {", ".join(kw_list)}, please change \\"base.docx\\" accordingly. After changing \\"base.docx\\", please click \\"Already Changed\\". If you decline the suggestions, please click \\"Decline Suggestion\\"." buttons {{"Already Changed", "Decline Suggestion"}} default button "Already Changed")
             end tell
         """
         result = os.system(f"osascript -e '{script}'")
@@ -420,7 +422,7 @@ def msgbox_similar_application(message, temp, system_used):
         root.withdraw()
         choice = messagebox.askyesno(
             "Similar Applications Found",
-            f"{message}\n\n{", ".join(dates)}\n\n{", ".join(positions)}",
+            f"{message}\n\n{', '.join(dates)}\n\n{', '.join(positions)}",
             icon="warning",
             button={"yes": "Continue", "no": "Stop"},
         )
