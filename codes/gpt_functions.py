@@ -232,7 +232,7 @@ def shrink_text(extracted_text, threshold=300):
         )
         return extracted_text
 
-    extracted_text_2 = chatgpt("chatgpt-4o-latest", query_shirnk_text(extracted_text))
+    extracted_text_2 = chatgpt(model, query_shirnk_text(extracted_text))
     word_count_2 = len(extracted_text_2.split())
 
     print(
@@ -283,13 +283,13 @@ def merge_pdf(sequence, package_folder, my_name):
     return True
 
 
-def extract_keywords(jd, cv, company_name, company_country):
+def extract_keywords(jd, cv, company_name, company_country, model="gpt-4o"):
     system_msg_1 = f"""You are an ATS (Applicant Tracking System) machine screener, filtering resumes received for the job opening at {company_name} in {company_country}. Here is the job description for this role:\n\n{jd}\n\nNow you received one applicant (me)'s CV: \n\n{cv}\n\nEvaluate thoroughly the key abilities required for this role, and evaluate my CV's ATS compatibility by analyzing keyword matches and formatting. Score on a scale of 0-100, where 100 means perfect keyword alignment and formatting, and 0 means no matches. If the score surpasses 70, my CV can go through this round of machine screening, meaning it is a compatible CV. Use industry-recognized ATS standards to evaluate my CV."""
 
     prompt_1 = """On a scale of 0-100, please provide my CV's ATS score. Output only the number, do not include any other information."""
 
     # First attempt with no temperature
-    answer_1 = chatgpt("gpt-4o-mini", prompt=prompt_1, system_msg=system_msg_1)
+    answer_1 = chatgpt(model, prompt=prompt_1, system_msg=system_msg_1)
     try:
         ats_score_num = int(answer_1)
         if 0 <= ats_score_num <= 100:
@@ -302,7 +302,7 @@ def extract_keywords(jd, cv, company_name, company_country):
     for retry in range(1, 5):
         try:
             answer_1 = chatgpt(
-                "gpt-4o-mini",
+                model,
                 prompt=prompt_1,
                 system_msg=system_msg_1,
                 temp=0.2 * retry,
@@ -327,7 +327,7 @@ def extract_keywords(jd, cv, company_name, company_country):
 
     for retry in range(5):
         answer_2 = chatgpt(
-            "gpt-4o-latest", prompt=prompt_2, system_msg=system_msg_2, temp=0.2 * retry
+            model, prompt=prompt_2, system_msg=system_msg_2, temp=0.2 * retry
         ).strip()
 
         # Clean the response
